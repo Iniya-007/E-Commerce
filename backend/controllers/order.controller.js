@@ -1,22 +1,90 @@
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import Address from "../models/Address.js";
+
 
 export const createOrder = async (
   req,
   res
 ) => {
   try {
-    const { items } = req.body;
+
+    const {
+      items,
+      addressId,
+    } = req.body;
+
+
+    // -----------------------------------------
+    // VALIDATE ITEMS
+    // -----------------------------------------
+
+    if (
+      !items ||
+      !Array.isArray(items) ||
+      items.length === 0
+    ) {
+      return res.status(400).json({
+        message: "No order items provided",
+      });
+    }
+
+
+    // -----------------------------------------
+    // VALIDATE ADDRESS
+    // -----------------------------------------
+
+    if (!addressId) {
+      return res.status(400).json({
+        message:
+          "Delivery address is required",
+      });
+    }
+
+
+    const address =
+      await Address.findOne({
+        _id: addressId,
+        user: req.user._id,
+      });
+
+
+    if (!address) {
+      return res.status(404).json({
+        message:
+          "Delivery address not found",
+      });
+    }
+
+
+    // -----------------------------------------
+    // CREATE ORDER ITEMS
+    // -----------------------------------------
 
     let orderItems = [];
 
     let totalPrice = 0;
 
+
     for (const item of items) {
+
+      if (
+        !item.product ||
+        !item.quantity ||
+        item.quantity < 1
+      ) {
+        return res.status(400).json({
+          message:
+            "Invalid product or quantity",
+        });
+      }
+
+
       const product =
         await Product.findById(
           item.product
         );
+
 
       if (!product) {
         return res.status(404).json({
@@ -25,23 +93,43 @@ export const createOrder = async (
         });
       }
 
+
+      // ---------------------------------------
+      // STOCK CHECK
+      // ---------------------------------------
+
       if (
         product.stock <
         item.quantity
       ) {
         return res.status(400).json({
-          message: `Only ${product.stock} items available for ${product.name}`,
+          message:
+            `Only ${product.stock} items available for ${product.name}`,
         });
       }
 
+
+      // ---------------------------------------
+      // SAVE ORDER ITEM
+      // ---------------------------------------
+
       orderItems.push({
         product: product._id,
-        productName: product.name,
+
+        productName:
+          product.name,
+
         priceAtPurchase:
           product.price,
+
         quantity:
           item.quantity,
       });
+
+
+      // ---------------------------------------
+      // REDUCE STOCK
+      // ---------------------------------------
 
       product.stock =
         product.stock -
@@ -49,22 +137,87 @@ export const createOrder = async (
 
       await product.save();
 
+
+      // ---------------------------------------
+      // CALCULATE TOTAL
+      // ---------------------------------------
+
       totalPrice +=
         product.price *
         item.quantity;
     }
 
+
+    // -----------------------------------------
+    // ADDRESS SNAPSHOT
+    // -----------------------------------------
+
+    const shippingAddress = {
+
+      fullName:
+        address.fullName,
+
+      phone:
+        address.phone,
+
+      addressLine1:
+        address.addressLine1,
+
+      addressLine2:
+        address.addressLine2 || "",
+
+      city:
+        address.city,
+
+      state:
+        address.state,
+
+      pincode:
+        address.pincode,
+
+      country:
+        address.country || "India",
+    };
+
+
+    // -----------------------------------------
+    // CREATE ORDER
+    // -----------------------------------------
+
     const order =
       await Order.create({
-        user: req.user._id,
-        items: orderItems,
+
+        user:
+          req.user._id,
+
+        items:
+          orderItems,
+
         totalPrice,
+
+        shippingAddress,
+
+        finalPrice:
+          totalPrice,
       });
 
+
+    // -----------------------------------------
+    // RESPONSE
+    // -----------------------------------------
+
     res.status(201).json(order);
+
   } catch (error) {
+
+    console.error(
+      "CREATE ORDER ERROR:",
+      error
+    );
+
     res.status(500).json({
-      message: error.message,
+      message:
+        error.message,
     });
   }
 };

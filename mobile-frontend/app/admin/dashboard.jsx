@@ -127,11 +127,11 @@ const STATS = [
 
 const QUICK_ACTIONS = [
   {
-    label: "Seller Verification",
-    icon: "shield-checkmark-outline",
-    color: COLORS.primary,
-    page: "/admin/seller-verification",
-  },
+    label: "Add Product",
+    icon: "add-circle-outline",
+    color: COLORS.green,
+    page: "/admin/add-product",
+},
   {
     label: "Customer Complaints",
     icon: "chatbox-ellipses-outline",
@@ -376,7 +376,10 @@ export default function Dashboard() {
             <TouchableOpacity
               key={action.label}
               activeOpacity={0.85}
-              onPress={() => router.push(action.page)}
+              onPress={() => {
+                console.log("Clicked:", action.page);
+                router.push(action.page)
+              }}
               style={{
                 width: "48%",
                 flexDirection: "row",

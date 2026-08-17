@@ -38,9 +38,40 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Automatically maintained by backend
+    priceHistory: [
+      {
+        price: {
+          type: Number,
+          required: true,
+        },
+
+        date: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     aiSuggestedPrice: {
       type: Number,
       default: 0,
+    },
+
+    priceRecommendation: {
+      type: String,
+      enum: ["BUY_NOW", "WAIT", "STABLE"],
+      default: "STABLE",
+    },
+
+    priceChangePercent: {
+      type: Number,
+      default: 0,
+    },
+
+    priceAdvice: {
+      type: String,
+      default: "",
     },
 
     discount: {

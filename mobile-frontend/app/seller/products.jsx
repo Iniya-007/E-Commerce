@@ -1,5 +1,4 @@
-import React, { useMemo, useState } from 'react';
-import {
+import React, { useEffect, useMemo, useState } from 'react';import {
   View,
   Text,
   ScrollView,
@@ -9,6 +8,10 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
+import {
+  getProducts,
+  deleteProduct,
+} from "../../services/product.service";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -158,12 +161,60 @@ const INITIAL_PRODUCTS = [
 // ---------------------------------------------------------------------------
 export default function MyProducts() {
   const router = useRouter();
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortKey, setSortKey] = useState('newest');
   const [panel, setPanel] = useState(null); // null | 'filter' | 'sort'
+
+
+  useEffect(() => {
+  fetchProducts();
+}, []);
+
+const fetchProducts = async () => {
+  try {
+    const data = await getProducts();
+
+    const backendProducts = data.products || data;
+
+    const formattedProducts = backendProducts.map((product) => ({
+      ...product,
+
+      // Keep the existing UI fields working
+      id: product._id,
+
+      category:
+        typeof product.category === "object"
+          ? product.category?.name || "Uncategorized"
+          : product.category || "Uncategorized",
+
+      orders: product.orders || 0,
+
+      rating:
+        product.averageRating !== undefined
+          ? Number(product.averageRating)
+          : 0,
+
+      status:
+        product.stock === 0
+          ? "outOfStock"
+          : product.isActive === false
+          ? "disabled"
+          : "active",
+
+      createdAt: new Date(product.createdAt).getTime(),
+    }));
+
+    setProducts(formattedProducts);
+  } catch (error) {
+    console.log(
+      "FETCH SELLER PRODUCTS ERROR:",
+      error.response?.data || error.message
+    );
+  }
+};
 
   const filteredProducts = useMemo(() => {
     let list = [...products];
@@ -219,26 +270,66 @@ export default function MyProducts() {
   };
 
   const handleEdit = (product) => {
-    // TODO: Connect to backend API — Edit screen will fetch full product
-    // details for `product.id` from the backend once wired up.
-    console.log('Edit Product', product.id);
-    router.push?.(`/seller/products/edit/${product.id}`);
+  console.log("Edit Product:", product.id);
+
+  router.push({
+    pathname: "/seller/edit-product/[id]",
+    params: {
+      id: product.id,
+    },
+  });
   };
 
   const handleDelete = (product) => {
-    Alert.alert('Delete this product?', `"${product.name}" will be permanently removed.`, [
-      { text: 'Cancel', style: 'cancel' },
+  Alert.alert(
+    "Delete this product?",
+    `"${product.name}" will be permanently removed.`,
+    [
       {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          // TODO: Connect to backend API — DELETE /api/seller/products/:id
-          console.log('Delete Product', product.id);
-          setProducts((prev) => prev.filter((p) => p.id !== product.id));
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            console.log(
+              "Deleting product:",
+              product.id
+            );
+
+            // Call backend
+            await deleteProduct(product.id);
+
+            // Remove from current UI after backend succeeds
+            setProducts((prev) =>
+              prev.filter(
+                (p) => p.id !== product.id
+              )
+            );
+
+            Alert.alert(
+              "Success",
+              "Product deleted successfully."
+            );
+          } catch (error) {
+            console.log(
+              "DELETE PRODUCT ERROR:",
+              error.response?.data || error.message
+            );
+
+            Alert.alert(
+              "Error",
+              error.response?.data?.message ||
+                "Failed to delete product."
+            );
+          }
         },
       },
-    ]);
-  };
+    ]
+  );
+};
 
   const handleToggleDisable = (product) => {
     const willEnable = product.status === 'disabled';

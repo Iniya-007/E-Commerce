@@ -23,6 +23,7 @@ const sellerProfileSchema = new mongoose.Schema(
       default: "",
     },
 
+
     businessName: {
       type: String,
       default: "",
@@ -96,6 +97,22 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    phone: {
+      type: String,
+      default: "",
+    },
+
+    profileImage: {
+      type: String,
+      default: "",
+    },
+
+    profileImagePublicId: {
+      type: String,
+      default: "",
+    },
+
 
     role: {
       type: String,

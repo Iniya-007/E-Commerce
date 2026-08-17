@@ -20,6 +20,7 @@ const router = express.Router();
 
 router.post(
 "/",
+protect,
 createProduct
 );
 
@@ -31,9 +32,9 @@ router.get("/:id/related", getRelatedProducts);
 
 router.get("/:id", getProductById);
 
-router.put("/:id", protect, admin, updateProduct);
+router.put("/:id", protect, updateProduct);
 
-router.delete("/:id", protect, admin, deleteProduct);
+router.delete("/:id", protect, deleteProduct);
 
 
 

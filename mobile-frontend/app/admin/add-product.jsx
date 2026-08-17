@@ -10,18 +10,14 @@ Image,
 Alert
 } from "react-native";
 
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import * as ImagePicker from "expo-image-picker";
 
 import { Picker } from "@react-native-picker/picker";
 
-import axios from "axios";
+import api from "../../services/api";
+
 
 export default function AddProduct() {
-
-const BASE_URL =
-"http://192.168.137.212:5000/api";
 
 const [name, setName] =
 useState("");
@@ -97,68 +93,90 @@ type: "image/jpeg"
 
 );
 
-const response =
-await axios.post(
-
-`${BASE_URL}/products/upload-image`,
-
-formData,
-
-{
-
-headers: {
-
-"Content-Type":
-
-"multipart/form-data"
-
-}
-
-}
-
+const response = await api.post(
+  "/products/upload-image",
+  formData,
+  {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }
 );
 
 return response.data.imageUrl;
 
 };
 
-// SAVE PRODUCT
-
 const saveProduct = async () => {
-  try {
-    console.log("Saving Product");
 
-    const token = await AsyncStorage.getItem("token");
-    console.log("Token:", token);
+try{
 
-    const imageUrl = await uploadImage();
+console.log("Saving Product");
 
-    const product = {
-      name,
-      description,
-      price: Number(price),
-      stock: Number(stock),
-      category,
-      images: [imageUrl],
-    };
+const imageUrl =
+await uploadImage();
 
-    const response = await axios.post(
-      `${BASE_URL}/products`,
-      product,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+console.log(imageUrl);
 
-    Alert.alert("Success", "Product Added");
-  } catch (error) {
-    console.log(error.response?.data);
-    Alert.alert("Error", JSON.stringify(error.response?.data));
-  }
+const product = {
+
+name,
+
+description,
+
+price:Number(price),
+
+stock:Number(stock),
+
+category,
+
+images:[imageUrl]
+
 };
 
+console.log(product);
+
+const response = await api.post(
+  "/products",
+  product
+);
+//console.log(response.data);
+
+Alert.alert(
+
+"Success",
+
+"Product Added"
+
+);
+
+}
+
+catch(error){
+
+console.log(error);
+
+console.log(
+
+error.response?.data
+
+);
+
+Alert.alert(
+
+"Error",
+
+JSON.stringify(
+
+error.response?.data
+
+)
+
+);
+
+}
+
+};
 
 
 
@@ -359,14 +377,6 @@ value="6a2b7c3c01e7b0ab05ac1b54"
 label="Laptop"
 
 value="6a2b7c7e01e7b0ab05ac1b55"
-
-/>
-
-<Picker.Item
-
-label="Fashion"
-
-value="6a2b7ca601e7b0ab05ac1b56"
 
 />
 

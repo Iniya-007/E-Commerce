@@ -47,14 +47,12 @@ await getProducts();
 const allProducts =
 data.products || data;
 
-console.log(allProducts);
-console.log(name);
 allProducts.forEach(product => {
 
-console.log(
+/*console.log(
 product.name,
 product.category
-);
+);*/
 
 });
 
@@ -77,9 +75,9 @@ const filtered = allProducts.filter((product) => {
 
 });
 
-console.log("Selected Category:", name);
+/*console.log("Selected Category:", name);
 
-console.log("Filtered Products:", filtered);
+console.log("Filtered Products:", filtered);*/
 
 setProducts(filtered);
 

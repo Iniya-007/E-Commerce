@@ -10,6 +10,8 @@ Image,
 Alert
 } from "react-native";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import * as ImagePicker from "expo-image-picker";
 
 import { Picker } from "@react-native-picker/picker";
@@ -19,7 +21,7 @@ import axios from "axios";
 export default function AddProduct() {
 
 const BASE_URL =
-"http://10.85.169.71:5000/api";
+"http://192.168.137.212:5000/api";
 
 const [name, setName] =
 useState("");
@@ -149,7 +151,7 @@ images:[imageUrl]
 
 };
 
-console.log(product);
+//console.log(product);
 
 const response =
 
@@ -161,7 +163,7 @@ product
 
 );
 
-console.log(response.data);
+//console.log(response.data);
 
 Alert.alert(
 

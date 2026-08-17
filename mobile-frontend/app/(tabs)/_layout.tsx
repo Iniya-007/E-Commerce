@@ -1,8 +1,13 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
+
+import { ActionSheetProvider } from "@expo/react-native-action-sheet";
+
+
 export default function TabLayout() {
   return (
+    <ActionSheetProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -79,5 +84,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </ActionSheetProvider>
   );
 }

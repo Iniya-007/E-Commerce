@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useContext,
+} from "react";
+
 import {
   View,
   Text,
@@ -10,14 +14,29 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   StatusBar,
+  Alert,
 } from "react-native";
+
 import { useRouter } from "expo-router";
+
 import { Ionicons } from "@expo/vector-icons";
 
+import {
+  loginUser,
+} from "../../services/auth.service";
+
+import {
+  saveUser,
+} from "../../services/storage.service";
+
+import {
+  AuthContext,
+} from "../../context/AuthContext";
+
 const { width } = Dimensions.get("window");
+
 const isSmallScreen = width < 380;
 
-// ---- Theme tokens (kept local since no StyleSheet / external lib is used) ----
 const COLORS = {
   primary: "#2563EB",
   primaryDark: "#1E40AF",
@@ -30,7 +49,6 @@ const COLORS = {
   danger: "#EF4444",
 };
 
-// ---- Role options for the Role Selection section ----
 const ROLES = [
   {
     key: "buyer",
@@ -56,66 +74,215 @@ const ROLES = [
 ];
 
 export default function LoginScreen() {
+
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("buyer");
+  const { login } =
+    useContext(AuthContext);
 
-  const handleLogin = () => {
-    // No auth logic — UI + navigation only
-    const role = ROLES.find((r) => r.key === selectedRole);
-    router.push(role ? role.route : "/(tabs)/home");
+  const [email, setEmail] =
+    useState("");
+
+  const [password, setPassword] =
+    useState("");
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [rememberMe, setRememberMe] =
+    useState(false);
+
+  const [emailFocused, setEmailFocused] =
+    useState(false);
+
+  const [passwordFocused, setPasswordFocused] =
+    useState(false);
+
+  const [selectedRole, setSelectedRole] =
+    useState("buyer");
+
+  const handleLogin = async () => {
+
+    // ADMIN LOGIN
+
+    if (
+      email === "admin@aureva.com" &&
+      password === "admin123"
+    ) {
+
+      Alert.alert(
+        "Success",
+        "Admin Login Successful"
+      );
+
+      router.replace(
+        "/admin/dashboard"
+      );
+
+      return;
+
+    }
+
+    // USER LOGIN
+
+    try {
+
+      const data =
+        await loginUser({
+
+          email,
+
+          password,
+
+        });
+
+       console.log("LOGIN USER:", data.user);
+
+      await saveUser(
+
+        data.user,
+
+        data.token
+
+      );
+
+      login(
+
+        data.user,
+
+        data.token
+
+      );
+
+      Alert.alert(
+
+        "Success",
+
+        "Login Successful"
+
+      );
+
+      const role =
+        ROLES.find(
+          (r) =>
+            r.key === selectedRole
+        );
+
+      router.replace(
+
+        role
+          ? role.route
+          : "/(tabs)/home"
+
+      );
+
+    }
+
+    catch (error) {
+
+      Alert.alert(
+
+        "Error",
+
+        error.response?.data?.message ||
+          "Login Failed"
+
+      );
+
+    }
+
   };
 
   const handleGuest = () => {
+
     router.push("/(tabs)/home");
+
   };
 
   const handleRegisterNav = () => {
+
     router.push("/auth/register");
+
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: COLORS.white,
+      }}
+    >
+
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.white}
+      />
+
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{
+          flex: 1,
+        }}
+        behavior={
+          Platform.OS === "ios"
+            ? "padding"
+            : undefined
+        }
       >
+
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
             paddingHorizontal: 24,
-            paddingTop: Platform.OS === "android" ? 40 : 20,
+            paddingTop:
+              Platform.OS === "android"
+                ? 40
+                : 20,
             paddingBottom: 40,
           }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+
           {/* Logo */}
-          <View style={{ alignItems: "center", marginTop: 24, marginBottom: 12 }}>
+
+          <View
+            style={{
+              alignItems: "center",
+              marginTop: 24,
+              marginBottom: 12,
+            }}
+          >
+
             <View
               style={{
                 width: 84,
                 height: 84,
                 borderRadius: 24,
-                backgroundColor: COLORS.primary,
+                backgroundColor:
+                  COLORS.primary,
                 alignItems: "center",
                 justifyContent: "center",
-                shadowColor: COLORS.primary,
-                shadowOffset: { width: 0, height: 10 },
+                shadowColor:
+                  COLORS.primary,
+                shadowOffset: {
+                  width: 0,
+                  height: 10,
+                },
                 shadowOpacity: 0.35,
                 shadowRadius: 18,
                 elevation: 10,
               }}
             >
-              <Ionicons name="sparkles" size={38} color={COLORS.white} />
+
+              <Ionicons
+                name="sparkles"
+                size={38}
+                color={COLORS.white}
+              />
+
             </View>
+
             <Text
               style={{
                 marginTop: 14,
@@ -127,21 +294,31 @@ export default function LoginScreen() {
             >
               Aureva
             </Text>
+
             <Text
               style={{
                 fontSize: 12,
                 color: COLORS.subtext,
                 letterSpacing: 1.5,
                 marginTop: 2,
-                textTransform: "uppercase",
+                textTransform:
+                  "uppercase",
               }}
             >
               AI Powered Shopping
             </Text>
+
           </View>
 
           {/* Heading */}
-          <View style={{ marginTop: 28, marginBottom: 24 }}>
+
+          <View
+            style={{
+              marginTop: 28,
+              marginBottom: 24,
+            }}
+          >
+
             <Text
               style={{
                 fontSize: 28,
@@ -152,6 +329,7 @@ export default function LoginScreen() {
             >
               Welcome Back
             </Text>
+
             <Text
               style={{
                 fontSize: 15,
@@ -162,16 +340,23 @@ export default function LoginScreen() {
             >
               Login to continue shopping.
             </Text>
+
           </View>
 
           {/* Card */}
+
           <View
             style={{
-              backgroundColor: COLORS.white,
+              backgroundColor:
+                COLORS.white,
               borderRadius: 24,
               padding: 22,
-              shadowColor: "#0F172A",
-              shadowOffset: { width: 0, height: 12 },
+              shadowColor:
+                "#0F172A",
+              shadowOffset: {
+                width: 0,
+                height: 12,
+              },
               shadowOpacity: 0.08,
               shadowRadius: 24,
               elevation: 6,
@@ -179,7 +364,9 @@ export default function LoginScreen() {
               borderColor: "#F1F5F9",
             }}
           >
+
             {/* Email */}
+
             <Text
               style={{
                 fontSize: 13,
@@ -190,29 +377,46 @@ export default function LoginScreen() {
             >
               Email
             </Text>
+
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 borderWidth: 1.5,
-                borderColor: emailFocused ? COLORS.primary : COLORS.border,
-                backgroundColor: emailFocused ? COLORS.primaryTint : "#F8FAFC",
+                borderColor:
+                  emailFocused
+                    ? COLORS.primary
+                    : COLORS.border,
+                backgroundColor:
+                  emailFocused
+                    ? COLORS.primaryTint
+                    : "#F8FAFC",
                 borderRadius: 14,
                 paddingHorizontal: 14,
                 height: 54,
                 marginBottom: 18,
               }}
             >
+
               <Ionicons
                 name="mail-outline"
                 size={20}
-                color={emailFocused ? COLORS.primary : COLORS.subtext}
+                color={
+                  emailFocused
+                    ? COLORS.primary
+                    : COLORS.subtext
+                }
               />
+
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
+                onFocus={() =>
+                  setEmailFocused(true)
+                }
+                onBlur={() =>
+                  setEmailFocused(false)
+                }
                 placeholder="you@example.com"
                 placeholderTextColor="#94A3B8"
                 keyboardType="email-address"
@@ -224,9 +428,11 @@ export default function LoginScreen() {
                   color: COLORS.text,
                 }}
               />
+
             </View>
 
             {/* Password */}
+
             <Text
               style={{
                 fontSize: 13,
@@ -237,29 +443,46 @@ export default function LoginScreen() {
             >
               Password
             </Text>
+
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
                 borderWidth: 1.5,
-                borderColor: passwordFocused ? COLORS.primary : COLORS.border,
-                backgroundColor: passwordFocused ? COLORS.primaryTint : "#F8FAFC",
+                borderColor:
+                  passwordFocused
+                    ? COLORS.primary
+                    : COLORS.border,
+                backgroundColor:
+                  passwordFocused
+                    ? COLORS.primaryTint
+                    : "#F8FAFC",
                 borderRadius: 14,
                 paddingHorizontal: 14,
                 height: 54,
                 marginBottom: 10,
               }}
             >
+
               <Ionicons
                 name="lock-closed-outline"
                 size={20}
-                color={passwordFocused ? COLORS.primary : COLORS.subtext}
+                color={
+                  passwordFocused
+                    ? COLORS.primary
+                    : COLORS.subtext
+                }
               />
+
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
+                onFocus={() =>
+                  setPasswordFocused(true)
+                }
+                onBlur={() =>
+                  setPasswordFocused(false)
+                }
                 placeholder="Enter your password"
                 placeholderTextColor="#94A3B8"
                 secureTextEntry={!showPassword}
@@ -270,20 +493,44 @@ export default function LoginScreen() {
                   color: COLORS.text,
                 }}
               />
+
               <TouchableOpacity
-                onPress={() => setShowPassword((prev) => !prev)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                onPress={() =>
+                  setShowPassword(
+                    (prev) => !prev
+                  )
+                }
+                hitSlop={{
+                  top: 10,
+                  bottom: 10,
+                  left: 10,
+                  right: 10,
+                }}
               >
+
                 <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  name={
+                    showPassword
+                      ? "eye-off-outline"
+                      : "eye-outline"
+                  }
                   size={20}
                   color={COLORS.subtext}
                 />
+
               </TouchableOpacity>
+
             </View>
 
-            {/* ---------------- ROLE SELECTION ---------------- */}
-            <View style={{ marginTop: 14, marginBottom: 8 }}>
+            {/* ROLE SELECTION */}
+
+            <View
+              style={{
+                marginTop: 14,
+                marginBottom: 8,
+              }}
+            >
+
               <Text
                 style={{
                   fontSize: 13,
@@ -297,56 +544,124 @@ export default function LoginScreen() {
 
               <View
                 style={{
-                  flexDirection: isSmallScreen ? "column" : "row",
-                  justifyContent: "space-between",
+                  flexDirection:
+                    isSmallScreen
+                      ? "column"
+                      : "row",
+                  justifyContent:
+                    "space-between",
                   gap: 10,
                 }}
               >
+
                 {ROLES.map((role) => {
-                  const isSelected = selectedRole === role.key;
+
+                  const isSelected =
+                    selectedRole === role.key;
+
                   return (
+
                     <TouchableOpacity
                       key={role.key}
                       activeOpacity={0.85}
-                      onPress={() => setSelectedRole(role.key)}
+                      onPress={() =>
+                        setSelectedRole(
+                          role.key
+                        )
+                      }
                       style={{
-                        flex: isSmallScreen ? undefined : 1,
-                        marginBottom: isSmallScreen ? 10 : 0,
+                        flex:
+                          isSmallScreen
+                            ? undefined
+                            : 1,
+                        marginBottom:
+                          isSmallScreen
+                            ? 10
+                            : 0,
                         borderRadius: 16,
                         paddingVertical: 14,
                         paddingHorizontal: 10,
                         alignItems: "center",
-                        justifyContent: "center",
-                        borderWidth: isSelected ? 1.5 : 1,
-                        borderColor: isSelected ? COLORS.primary : COLORS.border,
-                        backgroundColor: isSelected ? COLORS.primaryTint : COLORS.white,
-                        shadowColor: isSelected ? COLORS.primary : "#0F172A",
-                        shadowOffset: { width: 0, height: isSelected ? 6 : 2 },
-                        shadowOpacity: isSelected ? 0.18 : 0.04,
-                        shadowRadius: isSelected ? 12 : 4,
-                        elevation: isSelected ? 4 : 1,
-                        position: "relative",
+                        justifyContent:
+                          "center",
+                        borderWidth:
+                          isSelected
+                            ? 1.5
+                            : 1,
+                        borderColor:
+                          isSelected
+                            ? COLORS.primary
+                            : COLORS.border,
+                        backgroundColor:
+                          isSelected
+                            ? COLORS.primaryTint
+                            : COLORS.white,
+                        shadowColor:
+                          isSelected
+                            ? COLORS.primary
+                            : "#0F172A",
+                        shadowOffset: {
+                          width: 0,
+                          height:
+                            isSelected
+                              ? 6
+                              : 2,
+                        },
+                        shadowOpacity:
+                          isSelected
+                            ? 0.18
+                            : 0.04,
+                        shadowRadius:
+                          isSelected
+                            ? 12
+                            : 4,
+                        elevation:
+                          isSelected
+                            ? 4
+                            : 1,
+                        position:
+                          "relative",
                       }}
                     >
+
                       {isSelected && (
+
                         <View
                           style={{
-                            position: "absolute",
+                            position:
+                              "absolute",
                             top: 8,
                             right: 8,
                             width: 18,
                             height: 18,
                             borderRadius: 9,
-                            backgroundColor: COLORS.primary,
-                            alignItems: "center",
-                            justifyContent: "center",
+                            backgroundColor:
+                              COLORS.primary,
+                            alignItems:
+                              "center",
+                            justifyContent:
+                              "center",
                           }}
                         >
-                          <Ionicons name="checkmark" size={12} color={COLORS.white} />
+
+                          <Ionicons
+                            name="checkmark"
+                            size={12}
+                            color={
+                              COLORS.white
+                            }
+                          />
+
                         </View>
+
                       )}
 
-                      <Text style={{ fontSize: 24, marginBottom: 6 }}>
+                      <Text
+                        style={{
+                          fontSize: 24,
+                          marginBottom: 6,
+                        }}
+                      >
                         {role.emoji}
                       </Text>
 
@@ -354,7 +669,10 @@ export default function LoginScreen() {
                         style={{
                           fontSize: 14,
                           fontWeight: "700",
-                          color: isSelected ? COLORS.primaryDark : COLORS.text,
+                          color:
+                            isSelected
+                              ? COLORS.primaryDark
+                              : COLORS.text,
                           marginBottom: 4,
                         }}
                       >
@@ -364,57 +682,98 @@ export default function LoginScreen() {
                       <Text
                         style={{
                           fontSize: 11,
-                          color: COLORS.subtext,
-                          textAlign: "center",
+                          color:
+                            COLORS.subtext,
+                          textAlign:
+                            "center",
                           lineHeight: 15,
                         }}
                       >
                         {role.description}
                       </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-            {/* -------------- END ROLE SELECTION -------------- */}
 
-            {/* Remember me + Forgot password */}
+                    </TouchableOpacity>
+
+                  );
+
+                })}
+
+              </View>
+
+            </View>
+
+            {/* Remember Me */}
+
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
+                justifyContent:
+                  "space-between",
                 alignItems: "center",
                 marginTop: 20,
                 marginBottom: 4,
               }}
             >
+
               <TouchableOpacity
-                onPress={() => setRememberMe((prev) => !prev)}
-                style={{ flexDirection: "row", alignItems: "center" }}
+                onPress={() =>
+                  setRememberMe(
+                    (prev) => !prev
+                  )
+                }
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
               >
+
                 <View
                   style={{
                     width: 20,
                     height: 20,
                     borderRadius: 6,
                     borderWidth: 1.5,
-                    borderColor: rememberMe ? COLORS.primary : COLORS.border,
-                    backgroundColor: rememberMe ? COLORS.primary : COLORS.white,
-                    alignItems: "center",
-                    justifyContent: "center",
+                    borderColor:
+                      rememberMe
+                        ? COLORS.primary
+                        : COLORS.border,
+                    backgroundColor:
+                      rememberMe
+                        ? COLORS.primary
+                        : COLORS.white,
+                    alignItems:
+                      "center",
+                    justifyContent:
+                      "center",
                     marginRight: 8,
                   }}
                 >
+
                   {rememberMe && (
-                    <Ionicons name="checkmark" size={14} color={COLORS.white} />
+
+                    <Ionicons
+                      name="checkmark"
+                      size={14}
+                      color={COLORS.white}
+                    />
+
                   )}
+
                 </View>
-                <Text style={{ fontSize: 13, color: COLORS.subtext }}>
+
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: COLORS.subtext,
+                  }}
+                >
                   Remember Me
                 </Text>
+
               </TouchableOpacity>
 
               <TouchableOpacity>
+
                 <Text
                   style={{
                     fontSize: 13,
@@ -424,11 +783,15 @@ export default function LoginScreen() {
                 >
                   Forgot Password?
                 </Text>
+
               </TouchableOpacity>
+
             </View>
+
           </View>
 
-          {/* Login button */}
+                    {/* Login Button */}
+
           <TouchableOpacity
             onPress={handleLogin}
             activeOpacity={0.85}
@@ -440,7 +803,10 @@ export default function LoginScreen() {
               justifyContent: "center",
               marginTop: 26,
               shadowColor: COLORS.primary,
-              shadowOffset: { width: 0, height: 10 },
+              shadowOffset: {
+                width: 0,
+                height: 10,
+              },
               shadowOpacity: 0.3,
               shadowRadius: 16,
               elevation: 6,
@@ -458,7 +824,8 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Continue as guest */}
+          {/* Continue as Guest */}
+
           <TouchableOpacity
             onPress={handleGuest}
             activeOpacity={0.85}
@@ -485,6 +852,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Divider */}
+
           <View
             style={{
               flexDirection: "row",
@@ -492,7 +860,14 @@ export default function LoginScreen() {
               marginVertical: 26,
             }}
           >
-            <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+            <View
+              style={{
+                flex: 1,
+                height: 1,
+                backgroundColor: COLORS.border,
+              }}
+            />
+
             <Text
               style={{
                 marginHorizontal: 12,
@@ -502,10 +877,18 @@ export default function LoginScreen() {
             >
               or
             </Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: COLORS.border }} />
+
+            <View
+              style={{
+                flex: 1,
+                height: 1,
+                backgroundColor: COLORS.border,
+              }}
+            />
           </View>
 
-          {/* Register link */}
+          {/* Register */}
+
           <View
             style={{
               flexDirection: "row",
@@ -514,10 +897,18 @@ export default function LoginScreen() {
               paddingBottom: 10,
             }}
           >
-            <Text style={{ fontSize: 14, color: COLORS.subtext }}>
+            <Text
+              style={{
+                fontSize: 14,
+                color: COLORS.subtext,
+              }}
+            >
               Don't have an account?{" "}
             </Text>
-            <TouchableOpacity onPress={handleRegisterNav}>
+
+            <TouchableOpacity
+              onPress={handleRegisterNav}
+            >
               <Text
                 style={{
                   fontSize: 14,
@@ -529,8 +920,13 @@ export default function LoginScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+
         </ScrollView>
+
       </KeyboardAvoidingView>
+
     </SafeAreaView>
+
   );
+
 }

@@ -17,7 +17,7 @@ process.env.CLOUDINARY_API_SECRET
 
 });
 
-console.log(
+/*console.log(
 
 "CLOUDINARY CONFIG",
 
@@ -25,6 +25,6 @@ cloudinary.config()
 
 );
 
-console.log(process.env.CLOUDINARY_API_KEY);
+console.log(process.env.CLOUDINARY_API_KEY);*/
 
 export default cloudinary;

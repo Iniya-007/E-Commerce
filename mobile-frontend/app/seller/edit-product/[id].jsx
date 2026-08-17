@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, {
+  useEffect,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -14,9 +17,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
+import {
+  getProductById,
+  updateProduct,
+} from '../../../services/product.service';
+
 // ---------------------------------------------------------------------------
 // Theme
 // ---------------------------------------------------------------------------
+
+
+
 const COLORS = {
   primary: '#2563EB',
   primaryDark: '#1D4ED8',
@@ -40,22 +51,6 @@ const COLORS = {
 // ---------------------------------------------------------------------------
 // TODO: Connect to backend API — replace this static object with the
 // product fetched from your backend (e.g. GET /api/products/:id).
-const DEFAULT_PRODUCT = {
-  id: 'demo-1',
-  name: 'Handwoven Cotton Saree',
-  description:
-    'A breathable, hand-loomed cotton saree with traditional zari border detailing. Woven by artisans in small batches.',
-  price: '2450',
-  discount: '10',
-  stock: '42',
-  images: ['img-1', 'img-2', 'img-3'],
-  specifications: [
-    { id: 's1', key: 'Material', value: 'Cotton' },
-    { id: 's2', key: 'Color', value: 'Blue' },
-    { id: 's3', key: 'Weight', value: '450g' },
-    { id: 's4', key: 'Origin', value: 'Kanchipuram, India' },
-  ],
-};
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -63,20 +58,20 @@ const DEFAULT_PRODUCT = {
 export default function EditProduct() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const productId = id || DEFAULT_PRODUCT.id;
+  const productId = id;
 
   // NOTE: This screen is UI-only. All fields are seeded with placeholder
   // data below. Once the backend is wired up, replace DEFAULT_PRODUCT with
   // the product loaded via your API layer (e.g. inside a useEffect).
   // TODO: Connect to backend API — fetch product by `productId` and call
   // the setters below (setName, setDescription, etc.) with the response.
-  const [name, setName] = useState(DEFAULT_PRODUCT.name);
-  const [description, setDescription] = useState(DEFAULT_PRODUCT.description);
-  const [price, setPrice] = useState(DEFAULT_PRODUCT.price);
-  const [discount, setDiscount] = useState(DEFAULT_PRODUCT.discount);
-  const [stock, setStock] = useState(DEFAULT_PRODUCT.stock);
-  const [images, setImages] = useState(DEFAULT_PRODUCT.images);
-  const [specs, setSpecs] = useState(DEFAULT_PRODUCT.specifications);
+const [name, setName] = useState("");
+const [description, setDescription] = useState("");
+const [price, setPrice] = useState("");
+const [discount, setDiscount] = useState("");
+const [stock, setStock] = useState("");
+const [images, setImages] = useState([]);
+const [specs, setSpecs] = useState([]);
 
   const numericPrice = parseFloat(price) || 0;
   const numericDiscount = parseFloat(discount) || 0;
@@ -85,6 +80,86 @@ export default function EditProduct() {
   // -------------------------------------------------------------------------
   // Local UI-state handlers (these just update on-screen state, no backend)
   // -------------------------------------------------------------------------
+  const [loading, setLoading] = useState(true);
+const [saving, setSaving] = useState(false);
+
+
+useEffect(() => {
+  if (productId) {
+    loadProduct();
+  }
+}, [productId]);
+
+
+const loadProduct = async () => {
+  try {
+
+    console.log(
+      "Loading product:",
+      productId
+    );
+
+    const product =
+      await getProductById(productId);
+
+    console.log(
+      "Product loaded:",
+      product
+    );
+
+    setName(product.name || "");
+
+    setDescription(
+      product.description || ""
+    );
+
+    setPrice(
+      String(product.price ?? "")
+    );
+
+    setDiscount(
+      String(product.discount ?? "")
+    );
+
+    setStock(
+      String(product.stock ?? "")
+    );
+
+    setImages(
+      product.images || []
+    );
+
+    /*
+     * Your backend currently does not have
+     * specifications in the Product schema
+     * you showed earlier.
+     *
+     * Therefore keep this empty for now.
+     */
+    setSpecs([]);
+
+  } catch (error) {
+
+    console.log(
+      "LOAD PRODUCT ERROR:",
+      error.response?.data ||
+      error.message
+    );
+
+    Alert.alert(
+      "Error",
+      "Unable to load product"
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
+  
+  
+  
   const handleAddImage = () => {
     if (images.length >= 6) return;
     setImages((prev) => [...prev, `img-${prev.length + 1}-${Date.now()}`]);
@@ -111,29 +186,129 @@ export default function EditProduct() {
   // -------------------------------------------------------------------------
   // Placeholder actions — to be wired up to the backend service layer later
   // -------------------------------------------------------------------------
-  const handleUpdate = () => {
-    if (!name.trim() || !price || !stock) {
-      Alert.alert('Missing details', 'Name, price, and stock are required.');
-      return;
-    }
+ const handleUpdate = async () => {
 
-    // TODO: Connect to backend API — send the updated product fields
-    // (name, description, price, discount, finalPrice, stock, images, specs)
-    // to your update-product endpoint here.
-    console.log('Update Product', {
-      id: productId,
-      name,
-      description,
-      price: numericPrice,
-      discount: numericDiscount,
-      finalPrice: Number(finalPrice.toFixed(2)),
-      stock,
-      images,
-      specifications: specs,
-    });
+  if (!name.trim() || !price || !stock) {
 
-    router.back();
-  };
+    Alert.alert(
+      "Missing details",
+      "Name, price, and stock are required."
+    );
+
+    return;
+  }
+
+  const numericPrice =
+    parseFloat(price);
+
+  const numericStock =
+    parseInt(stock, 10);
+
+  if (
+    !Number.isFinite(numericPrice) ||
+    numericPrice <= 0
+  ) {
+
+    Alert.alert(
+      "Invalid price",
+      "Please enter a valid price."
+    );
+
+    return;
+  }
+
+  if (
+    !Number.isFinite(numericStock) ||
+    numericStock < 0
+  ) {
+
+    Alert.alert(
+      "Invalid stock",
+      "Please enter a valid stock quantity."
+    );
+
+    return;
+  }
+
+  try {
+
+    setSaving(true);
+
+    const productData = {
+
+      name:
+        name.trim(),
+
+      description:
+        description.trim(),
+
+      price:
+        numericPrice,
+
+      discount:
+        numericDiscount,
+
+      stock:
+        numericStock,
+
+      images:
+        images,
+    };
+
+    console.log(
+      "Updating product:",
+      productId
+    );
+
+    console.log(
+      "Data:",
+      productData
+    );
+
+    const result =
+      await updateProduct(
+        productId,
+        productData
+      );
+
+    console.log(
+      "PRODUCT UPDATED:",
+      result
+    );
+
+    Alert.alert(
+      "Success",
+      "Product updated successfully.",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            router.back();
+          },
+        },
+      ]
+    );
+
+  } catch (error) {
+
+    console.log(
+      "UPDATE PRODUCT ERROR:",
+      error.response?.data ||
+      error.message
+    );
+
+    Alert.alert(
+      "Update Failed",
+      error.response?.data?.message ||
+      "Unable to update product."
+    );
+
+  } finally {
+
+    setSaving(false);
+
+  }
+};
 
   const handleDelete = () => {
     Alert.alert(

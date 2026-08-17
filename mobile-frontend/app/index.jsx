@@ -29,10 +29,10 @@ export default function Index() {
       const data =
         await getUser();
 
-      console.log(
+     /* console.log(
         "STORAGE DATA:",
         data
-      );
+      );*/
 
       if (data.token) {
         setLoggedIn(true);
