@@ -32,6 +32,17 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
 
+    subCategory: {
+      type: String,
+      trim: true,
+    },
+
+    vtonCategory: {
+      type: String,
+      enum: ["tops", "bottoms", "one-pieces", null],
+      default: null,
+    },
+
     // Pricing
     price: {
       type: Number,
