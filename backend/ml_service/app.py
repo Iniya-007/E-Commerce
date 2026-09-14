@@ -4,22 +4,39 @@ from flask_cors import CORS
 import pandas as pd
 import numpy as np
 import joblib
+from pathlib import Path
 
 app = Flask(__name__)
 CORS(app)
 
 
-# ---------------------------------------------------------
-# Load new 6-history model
-# ---------------------------------------------------------
+BASE_DIR = Path(__file__).resolve().parent
 
-model = joblib.load(
-    "../ml/price_prediction_pipeline_6_history.pkl"
+MODEL_PATH = (
+    BASE_DIR.parent
+    / "ml"
+    / "price_prediction_pipeline_6_history.pkl"
 )
+
+model = joblib.load(MODEL_PATH)
 
 print("6-history price prediction model loaded!")
 
 
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "success": True,
+        "message": "Price Prediction API is healthy"
+    })
+
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "success": True,
+        "message": "Price Prediction API is running"
+    })
 # ---------------------------------------------------------
 # Prediction endpoint
 # ---------------------------------------------------------
