@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const ML_URL = "http://127.0.0.1:8000";
+const ML_URL = process.env.ML_URL;
 
 export const predictPrice = async (product) => {
   try {
